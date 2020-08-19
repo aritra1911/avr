@@ -1,0 +1,14 @@
+AVR-Programming/
+
+*.elf
+*.hex
+*.obj
+*.o
+*.d
+*.eep
+*.lst
+*.lss
+*.sym
+*.map
+*~
+*.eeprom

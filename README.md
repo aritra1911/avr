@@ -7,3 +7,9 @@ I'm currently using the ATmega328P from an Arduino UNO. I use a separate Arduino
 
 If you're facing an issue of `rc=-1` error from `avrdude` while programming the ATmega328P from an Arduino, head over to
 the discussion thread of [this issue](https://github.com/hexagon5un/AVR-Programming/issues/24) of the book's repository.
+
+# UART
+The empty Arduino board is absolutely perfect for using as a serial interface. While a dedicated serial adapter would
+look at the AVR from the computer's perspective, the Arduino will look at the computer from the AVR's perspective so
+make sure you get the RX and TX pins hooked up right. TX refers to transfer to the computer so that hooks up to the TX
+(pin 3) of the AVR. Similarly RX hooks up to RX (pin 2) of the AVR. No tricks here.
