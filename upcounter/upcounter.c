@@ -2,21 +2,26 @@
  * Make an external clock triggered upcounter.
  * - Triggers on rising edge
  * - Clock hooks up to PD2
+ * - Wastes exactly 7 clock cycles in clearing
  */
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <util/delay.h>
 #include "pinDefines.h"
 
+volatile uint8_t clearing;
+
 ISR(INT0_vect) {
-    if (PORTB == 0xff) {  // If we reach 255, we will start over
-        // Instead play a clearing animation before starting over!
-        cli();  // Make sure nothing tries to corrupt our animation
-        for (uint8_t i = 0; i < 8; i++) {
-            PORTB <<= 1;
-            _delay_ms(100);
-        }
-        sei();  // Okay done
+    // Keep incrementing PORTB, but
+    // when it reaches 255,
+    // play a clearing animation (right to left)
+    // which also resets PORTB to 0.
+    if (clearing) {
+        PORTB <<= 1;
+        if (!PORTB) clearing = 0;
+    } else if (PORTB == 0xff) {
+        clearing = 1;
+        PORTB <<= 1;
     } else
         PORTB++;
 }
@@ -30,9 +35,10 @@ void initInterrupt0(void) {
 int main(void) {
     LED_DDR = 0xff;  // Everyone must output
     LED_PORT = 0x00;  // Everyone must be silent, initially
+    clearing = 0;
     initInterrupt0();
 
-    while (1);  // Never quit
+    while (1);  // Never quit! Let interrupts handle everything!
 
     return 0;
 }
