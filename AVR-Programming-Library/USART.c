@@ -56,6 +56,11 @@ void printString(const char myString[]) {
   }
 }
 
+void printStringLn(const char myString[]) {
+    printString(myString);
+    transmitByte('\n');
+}
+
 void readString(char myString[], uint8_t maxLength) {
   char response;
   uint8_t i;

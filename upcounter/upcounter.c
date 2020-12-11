@@ -12,18 +12,18 @@
 volatile uint8_t clearing;
 
 ISR(INT0_vect) {
-    // Keep incrementing PORTB, but
+    // Keep incrementing LED_PORT, but
     // when it reaches 255,
     // play a clearing animation (right to left)
-    // which also resets PORTB to 0.
+    // which also resets LED_PORT to 0.
     if (clearing) {
-        PORTB <<= 1;
-        if (!PORTB) clearing = 0;
-    } else if (PORTB == 0xff) {
+        LED_PORT <<= 1;
+        if (!LED_PORT) clearing = 0;
+    } else if (LED_PORT == 0xff) {
         clearing = 1;
-        PORTB <<= 1;
+        LED_PORT <<= 1;
     } else
-        PORTB++;
+        LED_PORT++;
 }
 
 void initInterrupt0(void) {
