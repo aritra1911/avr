@@ -1,11 +1,11 @@
 #include <avr/io.h>
 #include <util/delay.h>
 
-static uint8_t inline get_time(uint8_t);
+uint8_t get_time(uint8_t);
 
 volatile uint8_t hours, minutes, seconds;
 
-static void inline tick(void) {
+void tick(void) {
     seconds++;
 
     if (seconds >= 60) {
@@ -29,38 +29,40 @@ int main(void) {
     minutes = 0x31;
     seconds = 0x00;
 
-    DDRB = 0b00111111;    // PB0-PB5 of PORTB are used as outputs
-    DDRC = 0b00000111;    // PC0-PC2 of PORTC are used as outputs
+    DDRB = 0x3f;    // PB0-PB5 of PORTB are used as outputs
+    DDRC = 0x07;    // PC0-PC2 of PORTC are used as outputs
 
-    PORTB |= 0b00111111;  // Turn PB0-PB5 on
-    PORTC |= 0b00000001;  // Turn PC0 on;
-                          // which turns on the entire hour bank
+    PORTB |= 0x3f;  // Turn PB0-PB5 on
+    PORTC |= 0x01;  // Turn PC0 on;
+                    // which turns on the entire hour bank
 
     while (1) {
         // Cycle through all three banks of LEDs
-        PORTB &= ~(0b00111111);           // Clear 6 LSBs of PORTB
-        PORTB |= get_time(PORTC);         // Get hours, minutes or seconds on PORTB
-                                          // depending on PORTC
-        _delay_ms(1);                     // Wait a little while
-                                          // and then
-        if (PORTC & 0b00000100) {         // If seconds bank is on,
-            PORTC &= ~(0b00000111);       // Clear 3 LSBs of PORTC
-            PORTC |= 0b00000001;          // Move back to hour bank
-        } else {
-            rc = (PORTC & 0b00000111);    // Record 3 LSBs of PORTC
-            PORTC &= ~(0b00000111);       // Clear 3 LSBs of PORTC
-            PORTC |= rc << 1;             // Shift 3 LSBs of PORTC
-        }
-        tick();
+        _delay_ms(1);               // Wait a little while
+
+        PORTB &= ~(0x3f);           // Clear 6 LSBs of PORTB
+
+        rc = PORTC & 0x07;          // Record 3 LSBs of PORTC
+        PORTC &= ~(0x07);           // Clear 3 LSBs of PORTC
+
+        if (rc & 0x04)              // If seconds bank is on,
+            rc = 0x01;              // Move back to hour bank
+        else
+            rc <<= 1;               // Shift to next bank
+
+        tick();                     // The clock ticks
+
+        PORTC |= rc;                // Turn on the proper LED Bank
+        PORTB |= get_time(rc);      // Display the number belonging to that bank
     }
 
     return 0;
 }
 
-static uint8_t inline get_time(uint8_t pc) {
-    switch (pc & 0b00000111) {            // Depending on 3 LSBs of PORTC, switch
-        case 0b00000001: return hours;    // output lines (on PORTB) to hours,
-        case 0b00000010: return minutes;  // minutes,
-        default: return seconds;          // or seconds
+uint8_t get_time(uint8_t pc) {
+    switch (pc & 0x07) {            // Depending on 3 LSBs of PORTC, switch
+        case 0x01: return hours;    // output lines (on PORTB) to hours,
+        case 0x02: return minutes;  // minutes,
+        default: return seconds;    // or seconds
     }
 }
