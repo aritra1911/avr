@@ -22,7 +22,7 @@ LIBDIR = ../AVR-Programming-Library
 
 PROGRAMMER_TYPE = usbasp
 # extra arguments to avrdude: baud rate, chip type, -F flag, etc.
-PROGRAMMER_ARGS =
+PROGRAMMER_ARGS = -v
 
 ##########------------------------------------------------------##########
 ##########                  Program Locations                   ##########
