@@ -1,3 +1,8 @@
+/*
+ * Hook 32.768 kHz crystal between TOSC1 (pin 9) and TOSC2 (pin 10)
+ * NOTE: Adding 22 pF load capacitors ceases oscillation.
+ */
+
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <util/delay.h>
@@ -6,21 +11,16 @@ uint8_t get_time(uint8_t);
 void tick(void);
 
 volatile uint8_t hours, minutes, seconds;
-volatile uint16_t millis;
 
-static inline void initTimer0(void) {
-    TCCR0A |= (1 << WGM01);               // Enable Timer0 in CTC Mode
-    TCCR0B |= (1 << CS01) | (1 << CS00);  // clk/64 (From prescaler)
-    TIMSK0 |= (1 << OCIE0A);              // Execute interrupt if timer value matches OCR0A value
+static inline void initTimer2(void) {
+    ASSR   |= (1 << AS2);     // Enable Asynchronous clock on TOSC1
+    TCCR2A |= (1 << WGM21);   // Enable Timer2 in CTC Mode
+    TCCR2B |= (1 << CS22) | (1 << CS21) | (1 << CS20);  // 32.768 kHz / 1024
+    TIMSK2 |= (1 << OCIE2A);  // Execute interrupt if timer value matches OCR2A value
 }
 
-ISR(TIMER0_COMPA_vect) {
-    millis++;
-
-    if (millis >= 1000) {
-        tick();
-        millis = 0;
-    }
+ISR(TIMER2_COMPA_vect) {
+    tick();
 }
 
 void tick(void) {
@@ -43,16 +43,16 @@ void tick(void) {
 int main(void) {
     uint8_t rc;
 
-    OCR0A = 125;  // ISR() called at an interval of 1 millisecond since
-                  // 8 MHz / 64 = 125 ticks per millisecond
-    millis = 0;   // TODO: Can this be static inside the ISR()?
+    OCR2A = 32;  // 32.768 kHz / 1024 = 32 Hz; Hence
+                 // when Timer2 counts 32 ticks, that's one second
+                 // that's when the ISR() is executed and the clock ticks.
 
-    initTimer0();
+    initTimer2();
     sei();
 
     hours   = 0x12;
     minutes = 0x06;
-    seconds = 0x00;
+    seconds = 0x35;
 
     DDRB = 0x3f;    // PB0-PB5 of PORTB are used as outputs
     DDRC = 0x07;    // PC0-PC2 of PORTC are used as outputs
