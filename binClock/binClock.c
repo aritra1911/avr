@@ -43,16 +43,19 @@ void tick(void) {
 int main(void) {
     uint8_t rc;
 
-    OCR2A = 32;  // 32.768 kHz / 1024 = 32 Hz; Hence
+    OCR2A = 31;  // 32.768 kHz / 1024 = 32 Hz; Hence
                  // when Timer2 counts 32 ticks, that's one second
+                 //    (but due to frequency inaccuracies, we intentionally tick on count 31
+                 //     this will makes the clock run a bit faster but it also makes sure that
+                 //     the clock doesn't lag behind severely as would happen with a count of 32)
                  // that's when the ISR() is executed and the clock ticks.
 
     initTimer2();
     sei();
 
-    hours   = 0x12;
-    minutes = 0x06;
-    seconds = 0x35;
+    hours   = 0x10;
+    minutes = 0x05;
+    seconds = 0x00;
 
     DDRB = 0x3f;    // PB0-PB5 of PORTB are used as outputs
     DDRC = 0x07;    // PC0-PC2 of PORTC are used as outputs
