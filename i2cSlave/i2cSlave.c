@@ -27,8 +27,31 @@ volatile uint8_t k;
 ISR(TWI_vect) {
     /* On data receive with acknowledge, received data is in TWDR
        Update k with this new value of TWDR */
-    if (TWSR == TW_SR_DATA_ACK)
+
+    if (TWSR == TW_SR_SLA_ACK) {
+        /* After receiving next byte, and send NACK */
+        TWCR &= ~(1 << TWEA);
+
+    } else if (TWSR == TW_SR_DATA_NACK) {
+        /* Byte received in TWDR,
+           and provided TWEA was set to zero after SLA, NACK will be sent */
         k = TWDR;
+
+        /* Reset TWEA for acknowledgement of next SLA */
+        TWCR |= (1 << TWEA);
+
+    } else if (TWSR == TW_ST_SLA_ACK) {
+        /* On Read request, send a different byte next (k + 5 for example) */
+        TWDR = k + 5;
+
+        /* We should be sending a single byte, so expect NACK from Master */
+        TWCR &= ~(1 << TWEA);
+
+    } else if (TWSR == TW_ST_DATA_NACK) {
+        /* Data was sent and NACK was received from Master (as expected)
+           Now clear TWEA for acknowledgement of next SLA */
+        TWCR |= (1 << TWEA);
+    }
 
     /* Clear I2C Interrupt Flag */
     TWCR |= (1 << TWINT);
