@@ -10,7 +10,11 @@
 uint8_t get_time(uint8_t);
 void tick(void);
 
-volatile uint8_t hours, minutes, seconds;
+struct Time {
+    uint8_t hours, minutes, seconds;
+};
+
+volatile struct Time curr_time;
 
 static inline void initTimer2(void) {
     ASSR   |= (1 << AS2);     // Enable Asynchronous clock on TOSC1
@@ -19,25 +23,23 @@ static inline void initTimer2(void) {
     TIMSK2 |= (1 << OCIE2A);  // Execute interrupt if timer value matches OCR2A value
 }
 
-ISR(TIMER2_COMPA_vect) {
-    tick();
-}
+ISR(TIMER2_COMPA_vect) { tick(); }
 
 void tick(void) {
-    seconds++;
+    curr_time.seconds++;
 
-    if (seconds >= 60) {
-        minutes++;
-        seconds = 0;
+    if (curr_time.seconds >= 60) {
+        curr_time.minutes++;
+        curr_time.seconds = 0;
     }
 
-    if (minutes >= 60) {
-        hours++;
-        minutes = 0;
+    if (curr_time.minutes >= 60) {
+        curr_time.hours++;
+        curr_time.minutes = 0;
     }
 
-    if (hours >= 24)
-        hours = 0;
+    if (curr_time.hours >= 24)
+        curr_time.hours = 0;
 }
 
 int main(void) {
@@ -53,42 +55,42 @@ int main(void) {
     initTimer2();
     sei();
 
-    hours   = 0x10;
-    minutes = 0x05;
-    seconds = 0x00;
+    curr_time.hours   = 0x10;
+    curr_time.minutes = 0x05;
+    curr_time.seconds = 0x0a;
 
     DDRB = 0x3f;    // PB0-PB5 of PORTB are used as outputs
     DDRC = 0x07;    // PC0-PC2 of PORTC are used as outputs
 
     PORTB |= 0x3f;  // Turn PB0-PB5 on
-    PORTC |= 0x01;  // Turn PC0 on;
-                    // which turns on the entire hour bank
+    PORTC |= 0x07;  // Turn PC0 on;
+    PORTC &= ~0x01; // which turns on the entire hour bank
 
     while (1) {
         // Cycle through all three banks of LEDs
-        _delay_ms(5);               // Wait a little while
+        _delay_ms(5);                // Wait a little while
 
-        PORTB &= ~(0x3f);           // Clear 6 LSBs of PORTB
+        PORTB &= ~(0x3f);            // Clear 6 LSBs of PORTB
 
-        rc = PORTC & 0x07;          // Record 3 LSBs of PORTC
-        PORTC &= ~(0x07);           // Clear 3 LSBs of PORTC
+        rc = (PORTC & 0x07) ^ 0x07;  // Record 3 LSBs of PORTC (inverted)
+        PORTC |= (0x07);             // Clear 3 LSBs of PORTC
 
-        if (rc & 0x04)              // If seconds bank is on,
-            rc = 0x01;              // Move back to hour bank
+        if (rc & 0x04)               // If seconds bank is on,
+            rc = 0x01;               // Move back to hour bank
         else
-            rc <<= 1;               // Shift to next bank
+            rc <<= 1;                // Shift to next bank
 
-        PORTC |= rc;                // Turn on the proper LED Bank
-        PORTB |= get_time(rc);      // Display the number belonging to that bank
+        PORTC &= ~rc;                // Turn on the proper LED Bank
+        PORTB |= get_time(rc);       // Display the number belonging to that bank
     }
 
     return 0;
 }
 
 uint8_t get_time(uint8_t pc) {
-    switch (pc & 0x07) {            // Depending on 3 LSBs of PORTC, switch
-        case 0x01: return hours;    // output lines (on PORTB) to hours,
-        case 0x02: return minutes;  // minutes,
-        default: return seconds;    // or seconds
+    switch (pc & 0x07) {  // Depending on 3 LSBs of PORTC, switch
+        case 0x01: return curr_time.hours;    // output lines (on PORTB) to hours,
+        case 0x02: return curr_time.minutes;  // minutes,
+        default:   return curr_time.seconds;  // or seconds
     }
 }
