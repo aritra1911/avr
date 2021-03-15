@@ -1,18 +1,17 @@
 /*
  * Hook 32.768 kHz crystal between TOSC1 (pin 9) and TOSC2 (pin 10)
- * NOTE: Adding 22 pF load capacitors ceases oscillation.
+ *   NOTE: Adding 22 pF load capacitors ceases oscillation.
+ * #FIXME: Crystal refuses to oscillate with the TQFP package,
+ *         adding load capacitors doesn't make a difference.
  */
 
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <util/delay.h>
+#include "binClock.h"
+#include "sync.h"
 
-uint8_t get_time(uint8_t);
-void tick(void);
-
-struct Time {
-    uint8_t hours, minutes, seconds;
-};
+#define I2C_SLAVE_ADDRESS 0x54
 
 volatile struct Time curr_time;
 
@@ -52,8 +51,6 @@ int main(void) {
                  //     the clock doesn't lag behind severely as would happen with a count of 32)
                  // that's when the ISR() is executed and the clock ticks.
 
-    initTimer2();
-    sei();
 
     curr_time.hours   = 0x10;
     curr_time.minutes = 0x05;
@@ -65,6 +62,11 @@ int main(void) {
     PORTB |= 0x3f;  // Turn PB0-PB5 on
     PORTC |= 0x07;  // Turn PC0 on;
     PORTC &= ~0x01; // which turns on the entire hour bank
+
+    initTimer2();
+    initI2CSlave(I2C_SLAVE_ADDRESS);
+    connectI2CSlave();
+    sei();
 
     while (1) {
         // Cycle through all three banks of LEDs
