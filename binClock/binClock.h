@@ -1,5 +1,5 @@
-#ifndef BINCLOCK_H
-# define BINCLOCK_H
+#ifndef _BINCLOCK_H
+# define _BINCLOCK_H
 
 struct Time {
     uint8_t hours
@@ -10,4 +10,4 @@ struct Time {
 uint8_t get_time(uint8_t);
 void tick(void);
 
-#endif
+#endif  /* _BINCLOCK_H */

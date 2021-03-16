@@ -18,8 +18,7 @@ ISR(TWI_vect) {
 
     } else if (TWSR == TW_SR_DATA_ACK) {
         /* Receive byte and send acknowledgement */
-        *t = TWDR;
-        t++;
+        *t++ = TWDR;
 
         if (t == &(sync_time.seconds)) {
             /* If about to receive last byte, receive and send NACK next */
