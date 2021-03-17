@@ -11,7 +11,7 @@
 #include "binClock.h"
 #include "sync.h"
 
-#define I2C_SLAVE_ADDRESS 0x54
+#define ADDRESS 0x54
 
 volatile struct Time curr_time;
 
@@ -64,7 +64,7 @@ int main(void) {
     PORTC &= ~0x01; // which turns on the entire hour bank
 
     initTimer2();
-    initI2CSlave(I2C_SLAVE_ADDRESS);
+    initI2CSlave(ADDRESS);
     connectI2CSlave();
     sei();
 
